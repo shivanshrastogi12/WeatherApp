@@ -9,7 +9,6 @@ import RecentSearches from "@/components/RecentSearch";
 import ThemeToggle from "@/components/ThemeToggle";
 import LoadingSpinner from "@/components/Loading";
 import ErrorComp from "@/components/ErrorComp";
-import { mapWeatherCodeToDescription, mapWeatherCodeToIcon } from "@/hook/mapWeatherCodeToIcon";
 
 export default function WeatherDashboard() {
   const [city, setCity] = useState("");
