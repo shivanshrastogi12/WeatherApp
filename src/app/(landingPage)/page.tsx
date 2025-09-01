@@ -10,16 +10,27 @@ import ThemeToggle from "@/components/ThemeToggle";
 import LoadingSpinner from "@/components/Loading";
 import ErrorComp from "@/components/ErrorComp";
 
+interface WeatherData {
+  name: string;
+  main: { temp: number; humidity: number };
+  weather: { icon: string; description: string }[];
+  wind: { speed: number };
+  sys: { country: string };
+}
+
+interface ForecastData {
+  daily: {
+    time: string[];
+    temperature_2m_max: number[];
+    temperature_2m_min: number[];
+    weathercode: number[];
+  };
+}
+
 export default function WeatherDashboard() {
   const [city, setCity] = useState("");
-  const [weatherData, setWeatherData] = useState<{
-    name: string;
-    main: { temp: number; humidity: number };
-    weather: { icon: string; description: string }[];
-    wind: { speed: number };
-    sys: { country: string };
-  } | null>(null);
-  const [forecastData, setForecastData] = useState<any>(null);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
