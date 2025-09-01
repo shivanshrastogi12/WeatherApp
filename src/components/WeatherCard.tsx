@@ -1,7 +1,6 @@
 "use client";
 
 import { mono } from "@/app/fonts";
-import Image from "next/image";
 import { IoMdRefresh } from "react-icons/io";
 
 interface WeatherCardProps {
@@ -33,13 +32,12 @@ export default function WeatherCard({
 
   const weatherIcon = weather[0].icon;
   const weatherDescription = weather[0].description;
-  const windSpeed = (wind.speed * 3.6).toFixed(1);
+  const windSpeed = wind.speed.toFixed(1);
 
   return (
     <div
-      className={`p-6 rounded-lg shadow-md ${
-        isDarkMode ? "bg-gray-800" : "bg-white"
-      } transition-all duration-300`}
+      className={`p-6 rounded-lg shadow-md ${isDarkMode ? "bg-gray-800" : "bg-white"
+        } transition-all duration-300`}
     >
       <div className="flex justify-between items-start">
         <div>
@@ -56,36 +54,28 @@ export default function WeatherCard({
             </button>
           </div>
           <p
-            className={`text-lg ${
-              isDarkMode ? "text-fuchsia-400" : "text-fuchsia-600"
-            } ${mono.className}`}
+            className={`text-lg ${isDarkMode ? "text-fuchsia-400" : "text-fuchsia-600"
+              } ${mono.className}`}
           >
             {weatherDescription}
           </p>
         </div>
         <div className="flex items-center">
-          <Image
-            src={`https://openweathermap.org/img/wn/${weatherIcon}@2x.png`}
-            alt={weatherDescription}
-            width={80}
-            height={80}
-            priority
-            className="w-20 h-20"
-          />
-          <span className="text-4xl font-bold">{Math.round(temp)}°C</span>
+          <div className="w-20 h-20 flex items-center justify-center text-5xl">
+            {weatherIcon}
+          </div>
+          <span className="text-4xl font-bold ml-2">{Math.round(temp)}°C</span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mt-6">
         <div
-          className={`p-4 rounded-lg ${
-            isDarkMode ? "bg-gray-700" : "bg-slate-200"
-          }`}
+          className={`p-4 rounded-lg ${isDarkMode ? "bg-gray-700" : "bg-slate-200"
+            }`}
         >
           <p
-            className={`text-sm ${mono.className} ${
-              isDarkMode ? "text-gray-400" : "text-gray-500"
-            }`}
+            className={`text-sm ${mono.className} ${isDarkMode ? "text-gray-400" : "text-gray-500"
+              }`}
           >
             Humidity
           </p>
@@ -93,14 +83,12 @@ export default function WeatherCard({
         </div>
 
         <div
-          className={`p-4 rounded-lg ${
-            isDarkMode ? "bg-gray-700" : "bg-slate-200"
-          }`}
+          className={`p-4 rounded-lg ${isDarkMode ? "bg-gray-700" : "bg-slate-200"
+            }`}
         >
           <p
-            className={`text-sm ${mono.className} ${
-              isDarkMode ? "text-gray-400" : "text-gray-500"
-            }`}
+            className={`text-sm ${mono.className} ${isDarkMode ? "text-gray-400" : "text-gray-500"
+              }`}
           >
             Wind Speed
           </p>

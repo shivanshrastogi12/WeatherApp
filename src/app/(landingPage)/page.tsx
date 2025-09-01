@@ -9,11 +9,7 @@ import RecentSearches from "@/components/RecentSearch";
 import ThemeToggle from "@/components/ThemeToggle";
 import LoadingSpinner from "@/components/Loading";
 import ErrorComp from "@/components/ErrorComp";
-
-const WeatherAPI_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
-if (!WeatherAPI_KEY) {
-  throw new Error("Missing OpenWeather API key in environment variables.");
-}
+import { mapWeatherCodeToDescription, mapWeatherCodeToIcon } from "@/hook/mapWeatherCodeToIcon";
 
 export default function WeatherDashboard() {
   const [city, setCity] = useState("");
@@ -24,7 +20,7 @@ export default function WeatherDashboard() {
     wind: { speed: number };
     sys: { country: string };
   } | null>(null);
-  const [forecastData, setForecastData] = useState(null);
+  const [forecastData, setForecastData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -56,30 +52,77 @@ export default function WeatherDashboard() {
     setError(null);
 
     try {
-      // Fetch current weather
-      const weatherResponse = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${WeatherAPI_KEY}&units=metric`
+      // Step 1: Get coordinates from geocoding API
+      const geoRes = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${cityName}&count=1&language=en&format=json`
       );
-
-      if (!weatherResponse.ok) {
-        throw new Error(
-          weatherResponse.status === 404
-            ? "City not found. Please check the spelling and try again."
-            : "Failed to fetch weather data. Please try again later."
-        );
+      if (!geoRes.ok) {
+        throw new Error("Failed to fetch location data. Please try again later.");
       }
 
-      const weatherResult = await weatherResponse.json();
-      setWeatherData(weatherResult);
-
-      const forecastResponse = await fetch(
-        `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&appid=${WeatherAPI_KEY}&units=metric`
-      );
-
-      if (forecastResponse.ok) {
-        const forecastResult = await forecastResponse.json();
-        setForecastData(forecastResult);
+      const locationData = await geoRes.json();
+      if (!locationData.results || locationData.results.length === 0) {
+        throw new Error("City not found. Please try another.");
       }
+
+      const latitude = locationData.results[0].latitude.toFixed(2);
+      const longitude = locationData.results[0].longitude.toFixed(2);
+      const country = locationData.results[0].country;
+
+      // Step 2: Fetch weather + forecast
+      const url = new URL("https://api.open-meteo.com/v1/forecast");
+      url.searchParams.set("latitude", latitude.toString());
+      url.searchParams.set("longitude", longitude.toString());
+      url.searchParams.set(
+        "current",
+        "temperature_2m,wind_speed_10m,relative_humidity_2m"
+      );
+      url.searchParams.set(
+        "daily",
+        "temperature_2m_max,temperature_2m_min,weathercode"
+      );
+      url.searchParams.set("forecast_days", "5");
+
+      url.searchParams.set("temperature_unit", "celsius");
+      url.searchParams.set("wind_speed_unit", "kmh");
+
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
+
+      // Step 3: Map Open-Meteo current -> weatherData format
+      const current = data.current;
+      const mappedWeather = {
+        name: cityName,
+        main: {
+          temp: current.temperature_2m,
+          humidity: current.relative_humidity_2m,
+        },
+        weather: [
+          {
+            icon: "🌤️",
+            description: "Current weather",
+          },
+        ],
+        wind: {
+          speed: current.wind_speed_10m,
+        },
+        sys: {
+          country: country || "",
+        },
+      };
+      setWeatherData(mappedWeather);
+
+      // Step 4: Set forecastData (hourly data for 5 days)
+      setForecastData({
+        daily: {
+          time: data.daily.time,
+          temperature_2m_max: data.daily.temperature_2m_max,
+          temperature_2m_min: data.daily.temperature_2m_min,
+          weathercode: data.daily.weathercode,
+        },
+      });
+
 
       updateRecentSearches(cityName);
     } catch (err) {
@@ -123,9 +166,8 @@ export default function WeatherDashboard() {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        isDarkMode ? "bg-gray-900 text-white" : "bg-blue-50 text-gray-900"
-      }`}
+      className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "bg-gray-900 text-white" : "bg-blue-50 text-gray-900"
+        }`}
     >
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
@@ -136,9 +178,8 @@ export default function WeatherDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
             <div
-              className={`p-6 rounded-lg shadow-md mb-6 ${
-                isDarkMode ? "bg-gray-800" : "bg-white"
-              }`}
+              className={`p-6 rounded-lg shadow-md mb-6 ${isDarkMode ? "bg-gray-800" : "bg-white"
+                }`}
             >
               <form onSubmit={handleSubmit} className="mb-4">
                 <div className="relative">
@@ -147,11 +188,10 @@ export default function WeatherDashboard() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="Enter city name"
-                    className={`w-full p-3 pr-10 rounded-lg border ${
-                      isDarkMode
-                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full p-3 pr-10 rounded-lg border ${isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   />
                   <button
                     type="submit"
@@ -184,25 +224,20 @@ export default function WeatherDashboard() {
                 />
 
                 {forecastData && (
-                  <Forecast
-                    forecastData={forecastData}
-                    isDarkMode={isDarkMode}
-                  />
+                  <Forecast forecastData={forecastData} isDarkMode={isDarkMode} />
                 )}
               </div>
             ) : (
               <div
-                className={`p-12 rounded-lg shadow-md text-center ${
-                  isDarkMode ? "bg-gray-800" : "bg-white"
-                }`}
+                className={`p-12 rounded-lg shadow-md text-center ${isDarkMode ? "bg-gray-800" : "bg-white"
+                  }`}
               >
                 <h2 className="text-xl font-semibold mb-2">
                   Welcome to Weather Dashboard
                 </h2>
                 <p
-                  className={`${
-                    isDarkMode ? "text-gray-300" : "text-gray-600"
-                  }`}
+                  className={`${isDarkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
                 >
                   Search for a city to see the current weather and forecast
                 </p>

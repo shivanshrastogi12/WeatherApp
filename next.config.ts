@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "openweathermap.org",
+        hostname: "open-meteo.com",
         port: "",
         pathname: "/**",
         search: "",
